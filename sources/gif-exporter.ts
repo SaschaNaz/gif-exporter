@@ -1055,23 +1055,8 @@ namespace GIFExporter {
                 if (!load_setup(callback)) return;
 
                 const h = new XMLHttpRequest();
-                // new browsers (XMLHttpRequest2-compliant)
                 h.open('GET', src, true);
                 h.responseType = "arraybuffer";
-
-                if ('overrideMimeType' in h) {
-                    h.overrideMimeType('text/plain; charset=x-user-defined');
-                }
-
-                // old browsers (XMLHttpRequest-compliant)
-                else if ('responseType' in h) {
-                    h.responseType = 'arraybuffer';
-                }
-
-                // IE9 (Microsoft.XMLHTTP-compliant)
-                else {
-                    h.setRequestHeader('Accept-Charset', 'x-user-defined');
-                }
 
                 h.onloadstart = () => {
                     // Wait until connection is opened to replace the gif element with a canvas to avoid a blank img
