@@ -577,7 +577,6 @@ namespace GIFExporter {
         let ctx_scaled = false;
 
         const frames: Frame[] = [];
-        const frameOffsets: FrameOffset[] = []; // elements have .x and .y properties
 
         const gif = options.gif;
         if (typeof options.auto_play == 'undefined')
@@ -626,19 +625,6 @@ namespace GIFExporter {
             tmpCanvas.style.width = w + 'px';
             tmpCanvas.style.height = h + 'px';
             tmpCanvas.getContext('2d').setTransform(1, 0, 0, 1, 0, 0);
-        };
-
-        const setFrameOffset = (frame: number, offset: FrameOffset) => {
-            if (!frameOffsets[frame]) {
-                frameOffsets[frame] = offset;
-                return;
-            }
-            if (typeof offset.x !== 'undefined') {
-                frameOffsets[frame].x = offset.x;
-            }
-            if (typeof offset.y !== 'undefined') {
-                frameOffsets[frame].y = offset.y;
-            }
         };
 
         const doShowProgress = (pos: number, length: number, draw: boolean) => {
@@ -730,7 +716,6 @@ namespace GIFExporter {
                 data: frame.getImageData(0, 0, hdr.width, hdr.height),
                 delay: delay
             });
-            frameOffsets.push({ x: 0, y: 0 });
         };
 
         const doImg = (img: ImageBlock) => {
@@ -874,8 +859,6 @@ namespace GIFExporter {
             })();
 
             const putFrame = () => {
-                let offset: FrameOffset;
-
                 if (i > frames.length - 1) {
                     i = 0;
                 }
@@ -884,9 +867,7 @@ namespace GIFExporter {
                     i = 0;
                 }
 
-                offset = frameOffsets[i];
-
-                tmpCanvas.getContext("2d").putImageData(frames[i].data, offset.x, offset.y);
+                tmpCanvas.getContext("2d").putImageData(frames[i].data, 0, 0);
                 ctx.globalCompositeOperation = "copy";
                 ctx.drawImage(tmpCanvas, 0, 0);
             };
@@ -1085,8 +1066,7 @@ namespace GIFExporter {
                 if (!initialized) init();
                 stream = new Stream(arr);
                 setTimeout(doParse, 0);
-            },
-            set_frame_offset: setFrameOffset
+            }
         };
         return instance;
     };
