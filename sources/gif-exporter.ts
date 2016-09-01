@@ -566,7 +566,7 @@ namespace GIFExporter {
             pushFrame();
             clear();
             transparency = gce.transparencyGiven ? gce.transparencyIndex : null;
-            delay = gce.delayTime;
+            delay = gce.delayTime * 10;
             disposalMethod = gce.disposalMethod;
             // We don't have much to do with the rest of GCE.
         };
