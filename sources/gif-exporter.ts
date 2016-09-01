@@ -560,16 +560,16 @@ namespace GIFExporter {
         let stream: Stream;
         let hdr: Header;
 
-        let loadError: string = null;
+        let loadError: string;
         let loading = false;
 
-        let transparency: number = null;
-        let delay: number = null;
-        let disposalMethod: number = null;
-        let disposalRestoreFromIdx: number = null;
-        let lastDisposalMethod: number = null;
-        let frame: CanvasRenderingContext2D = null;
-        let lastImg: ImageBlock = null;
+        let transparency: number;
+        let delay: number;
+        let disposalMethod: number;
+        let disposalRestoreFromIdx: number;
+        let lastDisposalMethod: number;
+        let frame: CanvasRenderingContext2D;
+        let lastImg: ImageBlock;
 
         let playing = true;
         let forward = true;
@@ -1018,7 +1018,7 @@ namespace GIFExporter {
         let toolbar: HTMLDivElement;
         let tmpCanvas: HTMLCanvasElement;
         let initialized = false;
-        let load_callback: Callback = null;
+        let load_callback: Callback;
 
         const load_setup = (callback: Callback) => {
             if (loading) return false;
