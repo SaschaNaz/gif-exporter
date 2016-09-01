@@ -65,14 +65,12 @@
 namespace GIFExporter {
     // Generic functions
     function bitsToNum(ba: boolean[]) {
-        return ba.reduce(function (s, n) {
-            return s * 2 + Number(n);
-        }, 0);
+        return ba.reduce((s, n) => s * 2 + Number(n), 0);
     };
 
     function byteToBitArr(bite: number) {
-        var a: boolean[] = [];
-        for (var i = 7; i >= 0; i--) {
+        const a: boolean[] = [];
+        for (let i = 7; i >= 0; i--) {
             a.push(!!(bite & (1 << i)));
         }
         return a;
@@ -112,17 +110,17 @@ namespace GIFExporter {
         };
 
         readUnsigned() { // Little-endian.
-            var a = this.readBytes(2);
+            const a = this.readBytes(2);
             return (a[1] << 8) + a[0];
         };
     };
 
     function lzwDecode(minCodeSize: number, data: string) {
         // TODO: Now that the GIF parser is a bit different, maybe this should get an array of bytes instead of a String?
-        var pos = 0; // Maybe this streaming thing should be merged with the Stream?
-        var readCode = (size: number) => {
-            var code = 0;
-            for (var i = 0; i < size; i++) {
+        let pos = 0; // Maybe this streaming thing should be merged with the Stream?
+        const readCode = (size: number) => {
+            let code = 0;
+            for (let i = 0; i < size; i++) {
                 if (data.charCodeAt(pos >> 3) & (1 << (pos & 7))) {
                     code |= 1 << i;
                 }
@@ -131,19 +129,19 @@ namespace GIFExporter {
             return code;
         };
 
-        var output: number[] = [];
+        const output: number[] = [];
 
-        var clearCode = 1 << minCodeSize;
-        var eoiCode = clearCode + 1;
+        const clearCode = 1 << minCodeSize;
+        const eoiCode = clearCode + 1;
 
-        var codeSize = minCodeSize + 1;
+        let codeSize = minCodeSize + 1;
 
-        var dict: number[][] = [];
+        const dict: number[][] = [];
 
-        var clear = () => {
-            dict = [];
+        const clear = () => {
+            dict.length = 0;
             codeSize = minCodeSize + 1;
-            for (var i = 0; i < clearCode; i++) {
+            for (let i = 0; i < clearCode; i++) {
                 dict[i] = [i];
             }
             dict[clearCode] = [];
@@ -151,8 +149,8 @@ namespace GIFExporter {
 
         };
 
-        var code: number;
-        var last: number;
+        let code: number;
+        let last: number;
 
         while (true) {
             last = code;
@@ -295,17 +293,17 @@ namespace GIFExporter {
         handler || (handler = {});
 
         // LZW (GIF-specific)
-        var parseCT = (entries: number) => { // Each entry is 3 bytes, for RGB.
-            var ct: number[][] = [];
-            for (var i = 0; i < entries; i++) {
+        const parseCT = (entries: number) => { // Each entry is 3 bytes, for RGB.
+            const ct: number[][] = [];
+            for (let i = 0; i < entries; i++) {
                 ct.push(st.readBytes(3));
             }
             return ct;
         };
 
-        var readSubBlocks = () => {
-            var size: number;
-            var data = '';
+        const readSubBlocks = () => {
+            let size: number;
+            let data = '';
             do {
                 size = st.readByte();
                 data += st.read(size);
@@ -313,15 +311,15 @@ namespace GIFExporter {
             return data;
         };
 
-        var parseHeader = () => {
-            var hdr = {} as Header;
+        const parseHeader = () => {
+            const hdr = {} as Header;
             hdr.sig = st.read(3);
             hdr.ver = st.read(3);
             if (hdr.sig !== 'GIF') throw new Error('Not a GIF file.'); // XXX: This should probably be handled more nicely.
             hdr.width = st.readUnsigned();
             hdr.height = st.readUnsigned();
 
-            var bits = byteToBitArr(st.readByte());
+            const bits = byteToBitArr(st.readByte());
             hdr.gctFlag = bits.shift();
             hdr.colorRes = bitsToNum(bits.splice(0, 3));
             hdr.sorted = bits.shift();
@@ -335,10 +333,10 @@ namespace GIFExporter {
             handler.hdr && handler.hdr(hdr);
         };
 
-        var parseExt = (block: ExtBlock) => {
-            var parseGCExt = (block: GCExtBlock) => {
-                var blockSize = st.readByte(); // Always 4
-                var bits = byteToBitArr(st.readByte());
+        const parseExt = (block: ExtBlock) => {
+            const parseGCExt = (block: GCExtBlock) => {
+                const blockSize = st.readByte(); // Always 4
+                const bits = byteToBitArr(st.readByte());
                 block.reserved = bits.splice(0, 3); // Reserved; should be 000.
                 block.disposalMethod = bitsToNum(bits.splice(0, 3));
                 block.userInput = bits.shift();
@@ -353,35 +351,35 @@ namespace GIFExporter {
                 handler.gce && handler.gce(block);
             };
 
-            var parseComExt = (block: CommentExtBlock) => {
+            const parseComExt = (block: CommentExtBlock) => {
                 block.comment = readSubBlocks();
                 handler.com && handler.com(block);
             };
 
-            var parsePTExt = (block: PTExtBlock) => {
+            const parsePTExt = (block: PTExtBlock) => {
                 // No one *ever* uses this. If you use it, deal with parsing it yourself.
-                var blockSize = st.readByte(); // Always 12
+                const blockSize = st.readByte(); // Always 12
                 block.ptHeader = st.readBytes(12);
                 block.ptData = readSubBlocks();
                 handler.pte && handler.pte(block);
             };
 
-            var parseAppExt = (block: AppExtBlock) => {
-                var parseNetscapeExt = (block: NetscapeAppExtBlock) => {
-                    var blockSize = st.readByte(); // Always 3
+            const parseAppExt = (block: AppExtBlock) => {
+                const parseNetscapeExt = (block: NetscapeAppExtBlock) => {
+                    const blockSize = st.readByte(); // Always 3
                     block.unknown = st.readByte(); // ??? Always 1? What is this?
                     block.iterations = st.readUnsigned();
                     block.terminator = st.readByte();
                     handler.app && handler.app.NETSCAPE && handler.app.NETSCAPE(block);
                 };
 
-                var parseUnknownAppExt = (block: UnknownAppExtBlock) => {
+                const parseUnknownAppExt = (block: UnknownAppExtBlock) => {
                     block.appData = readSubBlocks();
                     // FIXME: This won't work if a handler wants to match on any identifier.
                     handler.app && handler.app[block.identifier] && handler.app[block.identifier](block);
                 };
 
-                var blockSize = st.readByte(); // Always 11
+                const blockSize = st.readByte(); // Always 11
                 block.identifier = st.read(8);
                 block.authCode = st.read(3);
                 switch (block.identifier) {
@@ -394,7 +392,7 @@ namespace GIFExporter {
                 }
             };
 
-            var parseUnknownExt = (block: UnknownExtBlock) => {
+            const parseUnknownExt = (block: UnknownExtBlock) => {
                 block.data = readSubBlocks();
                 handler.unknown && handler.unknown(block);
             };
@@ -424,24 +422,24 @@ namespace GIFExporter {
             }
         };
 
-        var parseImg = (img: ImageBlock) => {
-            var deinterlace = (pixels: number[], width: number) => {
+        const parseImg = (img: ImageBlock) => {
+            const deinterlace = (pixels: number[], width: number) => {
                 // Of course this defeats the purpose of interlacing. And it's *probably*
                 // the least efficient way it's ever been implemented. But nevertheless...
-                var newPixels = new Array<number>(pixels.length);
-                var rows = pixels.length / width;
-                var cpRow = (toRow: number, fromRow: number) => {
-                    var fromPixels = pixels.slice(fromRow * width, (fromRow + 1) * width);
+                const newPixels = new Array<number>(pixels.length);
+                const rows = pixels.length / width;
+                const cpRow = (toRow: number, fromRow: number) => {
+                    const fromPixels = pixels.slice(fromRow * width, (fromRow + 1) * width);
                     newPixels.splice.apply(newPixels, [toRow * width, width].concat(fromPixels));
                 };
 
                 // See appendix E.
-                var offsets = [0, 4, 2, 1];
-                var steps = [8, 8, 4, 2];
+                const offsets = [0, 4, 2, 1];
+                const steps = [8, 8, 4, 2];
 
-                var fromRow = 0;
-                for (var pass = 0; pass < 4; pass++) {
-                    for (var toRow = offsets[pass]; toRow < rows; toRow += steps[pass]) {
+                let fromRow = 0;
+                for (let pass = 0; pass < 4; pass++) {
+                    for (let toRow = offsets[pass]; toRow < rows; toRow += steps[pass]) {
                         cpRow(toRow, fromRow)
                         fromRow++;
                     }
@@ -455,7 +453,7 @@ namespace GIFExporter {
             img.width = st.readUnsigned();
             img.height = st.readUnsigned();
 
-            var bits = byteToBitArr(st.readByte());
+            const bits = byteToBitArr(st.readByte());
             img.lctFlag = bits.shift();
             img.interlaced = bits.shift();
             img.sorted = bits.shift();
@@ -468,7 +466,7 @@ namespace GIFExporter {
 
             img.lzwMinCodeSize = st.readByte();
 
-            var lzwData = readSubBlocks();
+            const lzwData = readSubBlocks();
 
             img.pixels = lzwDecode(img.lzwMinCodeSize, lzwData);
 
@@ -479,8 +477,8 @@ namespace GIFExporter {
             handler.img && handler.img(img);
         };
 
-        var parseBlock = () => {
-            var block = {} as Block;
+        const parseBlock = () => {
+            const block = {} as Block;
             block.sentinel = st.readByte();
 
             switch (String.fromCharCode(block.sentinel)) { // For ease of matching
@@ -503,7 +501,7 @@ namespace GIFExporter {
             if (block.type !== 'eof') setTimeout(parseBlock, 0);
         };
 
-        var parse = () => {
+        const parse = () => {
             parseHeader();
             setTimeout(parseBlock, 0);
         };
@@ -541,11 +539,11 @@ namespace GIFExporter {
         (gif: HTMLImageElement): any;
     }
 
-    export var SuperGif = (opts: Options) => {
+    export const SuperGif = (opts: Options) => {
         interface InternalOptions extends Options {
             is_vp?: boolean;
         }
-        var options: InternalOptions = {
+        const options: InternalOptions = {
             gif: null,
             //viewport position
             vp_l: 0,
@@ -556,45 +554,45 @@ namespace GIFExporter {
             c_w: null,
             c_h: null
         };
-        for (var i in opts) { options[i] = opts[i] }
+        for (let i in opts) { options[i] = opts[i] }
         if (options.vp_w && options.vp_h) options.is_vp = true;
 
-        var stream: Stream;
-        var hdr: Header;
+        let stream: Stream;
+        let hdr: Header;
 
-        var loadError: string = null;
-        var loading = false;
+        let loadError: string = null;
+        let loading = false;
 
-        var transparency: number = null;
-        var delay: number = null;
-        var disposalMethod: number = null;
-        var disposalRestoreFromIdx: number = null;
-        var lastDisposalMethod: number = null;
-        var frame: CanvasRenderingContext2D = null;
-        var lastImg: ImageBlock = null;
+        let transparency: number = null;
+        let delay: number = null;
+        let disposalMethod: number = null;
+        let disposalRestoreFromIdx: number = null;
+        let lastDisposalMethod: number = null;
+        let frame: CanvasRenderingContext2D = null;
+        let lastImg: ImageBlock = null;
 
-        var playing = true;
-        var forward = true;
+        let playing = true;
+        let forward = true;
 
-        var ctx_scaled = false;
+        let ctx_scaled = false;
 
-        var frames: Frame[] = [];
-        var frameOffsets: FrameOffset[] = []; // elements have .x and .y properties
+        const frames: Frame[] = [];
+        const frameOffsets: FrameOffset[] = []; // elements have .x and .y properties
 
-        var gif = options.gif;
+        const gif = options.gif;
         if (typeof options.auto_play == 'undefined')
             options.auto_play = (!gif.getAttribute('rel:auto_play') || gif.getAttribute('rel:auto_play') == '1');
 
-        var onEndListener = (options.hasOwnProperty('on_end') ? options.on_end : null);
-        var loopDelay = (options.hasOwnProperty('loop_delay') ? options.loop_delay : 0);
-        var overrideLoopMode = (options.hasOwnProperty('loop_mode') ? options.loop_mode : 'auto');
-        var drawWhileLoading = (options.hasOwnProperty('draw_while_loading') ? options.draw_while_loading : true);
-        var showProgressBar = drawWhileLoading ? (options.hasOwnProperty('show_progress_bar') ? options.show_progress_bar : true) : false;
-        var progressBarHeight = (options.hasOwnProperty('progressbar_height') ? options.progressbar_height : 25);
-        var progressBarBackgroundColor = (options.hasOwnProperty('progressbar_background_color') ? options.progressbar_background_color : 'rgba(255,255,255,0.4)');
-        var progressBarForegroundColor = (options.hasOwnProperty('progressbar_foreground_color') ? options.progressbar_foreground_color : 'rgba(255,0,22,.8)');
+        const onEndListener = (options.hasOwnProperty('on_end') ? options.on_end : null);
+        const loopDelay = (options.hasOwnProperty('loop_delay') ? options.loop_delay : 0);
+        const overrideLoopMode = (options.hasOwnProperty('loop_mode') ? options.loop_mode : 'auto');
+        let drawWhileLoading = (options.hasOwnProperty('draw_while_loading') ? options.draw_while_loading : true);
+        const showProgressBar = drawWhileLoading ? (options.hasOwnProperty('show_progress_bar') ? options.show_progress_bar : true) : false;
+        const progressBarHeight = (options.hasOwnProperty('progressbar_height') ? options.progressbar_height : 25);
+        const progressBarBackgroundColor = (options.hasOwnProperty('progressbar_background_color') ? options.progressbar_background_color : 'rgba(255,255,255,0.4)');
+        const progressBarForegroundColor = (options.hasOwnProperty('progressbar_foreground_color') ? options.progressbar_foreground_color : 'rgba(255,0,22,.8)');
 
-        var clear = () => {
+        const clear = () => {
             transparency = null;
             delay = null;
             lastDisposalMethod = disposalMethod;
@@ -604,7 +602,7 @@ namespace GIFExporter {
 
         // XXX: There's probably a better way to handle catching exceptions when
         // callbacks are involved.
-        var doParse = () => {
+        const doParse = () => {
             try {
                 parseGIF(stream, handler);
             }
@@ -613,12 +611,12 @@ namespace GIFExporter {
             }
         };
 
-        var doText = (text: string) => {
+        const doText = (text: string) => {
             toolbar.innerHTML = text; // innerText? Escaping? Whatever.
             toolbar.style.visibility = 'visible';
         };
 
-        var setSizes = (w: number, h: number) => {
+        const setSizes = (w: number, h: number) => {
             canvas.width = w * get_canvas_scale();
             canvas.height = h * get_canvas_scale();
             toolbar.style.minWidth = (w * get_canvas_scale()) + 'px';
@@ -630,7 +628,7 @@ namespace GIFExporter {
             tmpCanvas.getContext('2d').setTransform(1, 0, 0, 1, 0, 0);
         };
 
-        var setFrameOffset = (frame: number, offset: FrameOffset) => {
+        const setFrameOffset = (frame: number, offset: FrameOffset) => {
             if (!frameOffsets[frame]) {
                 frameOffsets[frame] = offset;
                 return;
@@ -643,10 +641,10 @@ namespace GIFExporter {
             }
         };
 
-        var doShowProgress = (pos: number, length: number, draw: boolean) => {
+        const doShowProgress = (pos: number, length: number, draw: boolean) => {
             if (draw && showProgressBar) {
-                var height = progressBarHeight;
-                var left: number, mid: number, top: number, width: number;
+                let height = progressBarHeight;
+                let left: number, mid: number, top: number, width: number;
                 if (options.is_vp) {
                     if (!ctx_scaled) {
                         top = (options.vp_t + options.vp_h - height);
@@ -663,12 +661,13 @@ namespace GIFExporter {
                     }
                     //some debugging, draw rect around viewport
                     if (0) {
+                        let l: number, t: number, w: number, h: number;
                         if (!ctx_scaled) {
-                            var l = options.vp_l, t = options.vp_t;
-                            var w = options.vp_w, h = options.vp_h;
+                            l = options.vp_l, t = options.vp_t;
+                            w = options.vp_w, h = options.vp_h;
                         } else {
-                            var l = options.vp_l / get_canvas_scale(), t = options.vp_t / get_canvas_scale();
-                            var w = options.vp_w / get_canvas_scale(), h = options.vp_h / get_canvas_scale();
+                            l = options.vp_l / get_canvas_scale(), t = options.vp_t / get_canvas_scale();
+                            w = options.vp_w / get_canvas_scale(), h = options.vp_h / get_canvas_scale();
                         }
                         ctx.rect(l, t, w, h);
                         ctx.stroke();
@@ -689,8 +688,8 @@ namespace GIFExporter {
             }
         };
 
-        var doLoadError = (originOfError: string) => {
-            var drawError = () => {
+        const doLoadError = (originOfError: string) => {
+            const drawError = () => {
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, options.c_w ? options.c_w : hdr.width, options.c_h ? options.c_h : hdr.height);
                 ctx.strokeStyle = 'red';
@@ -707,16 +706,16 @@ namespace GIFExporter {
                 width: gif.width,
                 height: gif.height
             } as Header; // Fake header.
-            frames = [];
+            frames.length = 0;
             drawError();
         };
 
-        var doHdr = (_hdr: Header) => {
+        const doHdr = (_hdr: Header) => {
             hdr = _hdr;
             setSizes(hdr.width, hdr.height)
         };
 
-        var doGCE = (gce: GCExtBlock) => {
+        const doGCE = (gce: GCExtBlock) => {
             pushFrame();
             clear();
             transparency = gce.transparencyGiven ? gce.transparencyIndex : null;
@@ -725,7 +724,7 @@ namespace GIFExporter {
             // We don't have much to do with the rest of GCE.
         };
 
-        var pushFrame = () => {
+        const pushFrame = () => {
             if (!frame) return;
             frames.push({
                 data: frame.getImageData(0, 0, hdr.width, hdr.height),
@@ -734,13 +733,13 @@ namespace GIFExporter {
             frameOffsets.push({ x: 0, y: 0 });
         };
 
-        var doImg = (img: ImageBlock) => {
+        const doImg = (img: ImageBlock) => {
             if (!frame) frame = tmpCanvas.getContext('2d');
 
-            var currIdx = frames.length;
+            const currIdx = frames.length;
 
             //ct = color table, gct = global color table
-            var ct = img.lctFlag ? img.lct : hdr.gct; // TODO: What if neither exists?
+            const ct = img.lctFlag ? img.lct : hdr.gct; // TODO: What if neither exists?
 
             /*
             Disposal method indicates the way in which the graphic is to
@@ -784,7 +783,7 @@ namespace GIFExporter {
             // frame contains final pixel data from the last frame; do nothing
 
             //Get existing pixels for img region after applying disposal method
-            var imgData = frame.getImageData(img.leftPos, img.topPos, img.width, img.height);
+            const imgData = frame.getImageData(img.leftPos, img.topPos, img.width, img.height);
 
             //apply color table colors
             img.pixels.forEach(function (pixel, i) {
@@ -814,32 +813,32 @@ namespace GIFExporter {
             lastImg = img;
         };
 
-        var player = (() => {
-            var i = -1;
-            var iterationCount = 0;
+        const player = (() => {
+            let i = -1;
+            let iterationCount = 0;
 
-            var showingInfo = false;
-            var pinned = false;
+            let showingInfo = false;
+            let pinned = false;
 
             /**
              * Gets the index of the frame "up next".
              * @returns {number}
              */
-            var getNextFrameNo = () => {
-                var delta = (forward ? 1 : -1);
+            const getNextFrameNo = () => {
+                const delta = (forward ? 1 : -1);
                 return (i + delta + frames.length) % frames.length;
             };
 
-            var stepFrame = (amount: number) => { // XXX: Name is confusing.
+            const stepFrame = (amount: number) => { // XXX: Name is confusing.
                 i = i + amount;
 
                 putFrame();
             };
 
-            var step = (() => {
-                var stepping = false;
+            const step = (() => {
+                let stepping = false;
 
-                var completeLoop = () => {
+                const completeLoop = () => {
                     if (onEndListener !== null)
                         onEndListener(gif);
                     iterationCount++;
@@ -852,15 +851,15 @@ namespace GIFExporter {
                     }
                 };
 
-                var doStep = () => {
+                const doStep = () => {
                     stepping = playing;
                     if (!stepping) return;
 
                     stepFrame(1);
-                    var delay = frames[i].delay * 10;
+                    let delay = frames[i].delay * 10;
                     if (!delay) delay = 100; // FIXME: Should this even default at all? What should it be?
 
-                    var nextFrameNo = getNextFrameNo();
+                    const nextFrameNo = getNextFrameNo();
                     if (nextFrameNo === 0) {
                         delay += loopDelay;
                         setTimeout(completeLoop, delay);
@@ -874,8 +873,8 @@ namespace GIFExporter {
                 };
             })();
 
-            var putFrame = () => {
-                var offset: FrameOffset;
+            const putFrame = () => {
+                let offset: FrameOffset;
 
                 if (i > frames.length - 1) {
                     i = 0;
@@ -892,12 +891,12 @@ namespace GIFExporter {
                 ctx.drawImage(tmpCanvas, 0, 0);
             };
 
-            var play = () => {
+            const play = () => {
                 playing = true;
                 step();
             };
 
-            var pause = () => {
+            const pause = () => {
                 playing = false;
             };
 
@@ -932,17 +931,17 @@ namespace GIFExporter {
             }
         })();
 
-        var doDecodeProgress = (draw: boolean) => {
+        const doDecodeProgress = (draw: boolean) => {
             doShowProgress(stream.position, stream.data.length, draw);
         };
 
-        var doNothing = () => { };
+        const doNothing = () => { };
         /**
          * @param{boolean=} draw Whether to draw progress bar or not; this is not idempotent because of translucency.
          *                       Note that this means that the text will be unsynchronized with the progress bar on non-frames;
          *                       but those are typically so small (GCE etc.) that it doesn't really matter. TODO: Do this properly.
          */
-        var withProgress = <T>(fn: (block: T) => any, draw?: boolean) => {
+        const withProgress = <T>(fn: (block: T) => any, draw?: boolean) => {
             return (block: T) => {
                 fn(block);
                 doDecodeProgress(draw);
@@ -950,7 +949,7 @@ namespace GIFExporter {
         };
 
 
-        var handler = {
+        const handler = {
             hdr: withProgress(doHdr),
             gce: withProgress(doGCE),
             com: withProgress<Block>(doNothing),
@@ -977,10 +976,10 @@ namespace GIFExporter {
             }
         };
 
-        var init = () => {
-            var parent = gif.parentNode;
+        const init = () => {
+            const parent = gif.parentNode;
 
-            var div = document.createElement('div');
+            const div = document.createElement('div');
             canvas = document.createElement('canvas');
             ctx = canvas.getContext('2d');
             toolbar = document.createElement('div');
@@ -1003,8 +1002,8 @@ namespace GIFExporter {
             initialized = true;
         };
 
-        var get_canvas_scale = () => {
-            var scale: number;
+        const get_canvas_scale = () => {
+            let scale: number;
             if (options.max_width && hdr && hdr.width > options.max_width) {
                 scale = options.max_width / hdr.width;
             }
@@ -1014,20 +1013,20 @@ namespace GIFExporter {
             return scale;
         }
 
-        var canvas: HTMLCanvasElement;
-        var ctx: CanvasRenderingContext2D
-        var toolbar: HTMLDivElement;
-        var tmpCanvas: HTMLCanvasElement;
-        var initialized = false;
-        var load_callback: Callback = null;
+        let canvas: HTMLCanvasElement;
+        let ctx: CanvasRenderingContext2D
+        let toolbar: HTMLDivElement;
+        let tmpCanvas: HTMLCanvasElement;
+        let initialized = false;
+        let load_callback: Callback = null;
 
-        var load_setup = (callback: Callback) => {
+        const load_setup = (callback: Callback) => {
             if (loading) return false;
             if (callback) load_callback = callback;
             else load_callback = null;
 
             loading = true;
-            frames = [];
+            frames.length = 0;
             clear();
             disposalRestoreFromIdx = null;
             lastDisposalMethod = null;
@@ -1055,7 +1054,7 @@ namespace GIFExporter {
             load_url: (src: string, callback: Callback) => {
                 if (!load_setup(callback)) return;
 
-                var h = new XMLHttpRequest();
+                const h = new XMLHttpRequest();
                 // new browsers (XMLHttpRequest2-compliant)
                 h.open('GET', src, true);
                 h.responseType = "arraybuffer";
@@ -1082,12 +1081,9 @@ namespace GIFExporter {
                     if (h.status != 200) {
                         doLoadError('xhr - response');
                     }
-                    var data = h.response;
-                    if (data.toString().indexOf("ArrayBuffer") > 0) {
-                        data = new Uint8Array(data);
-                    }
+                    const data = h.response as ArrayBuffer;
 
-                    stream = new Stream(data);
+                    stream = new Stream(new Uint8Array(data));
                     setTimeout(doParse, 0);
                 };
                 h.onprogress = e => {
