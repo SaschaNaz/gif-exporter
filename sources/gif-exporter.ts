@@ -763,7 +763,7 @@ namespace GIFExporter {
                     // Restore to previous
                     // If we disposed every frame including first frame up to this point, then we have
                     // no composited frame to restore to. In this case, restore to background instead.
-                    if (disposalRestoreFromIdx !== null) {
+                    if (disposalRestoreFromIdx != null) {
                         frame.putImageData(frames[disposalRestoreFromIdx].data, 0, 0);
                     } else {
                         frame.clearRect(lastImg.leftPos, lastImg.topPos, lastImg.width, lastImg.height);
@@ -839,7 +839,7 @@ namespace GIFExporter {
                 let stepping = false;
 
                 const completeLoop = () => {
-                    if (onEndListener !== null)
+                    if (onEndListener)
                         onEndListener(gif);
                     iterationCount++;
 
