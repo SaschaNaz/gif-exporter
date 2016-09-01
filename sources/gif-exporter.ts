@@ -786,7 +786,7 @@ namespace GIFExporter {
             const imgData = frame.getImageData(img.leftPos, img.topPos, img.width, img.height);
 
             //apply color table colors
-            img.pixels.forEach(function (pixel, i) {
+            img.pixels.forEach((pixel, i) => {
                 // imgData.data === [R,G,B,A,R,G,B,A,...]
                 if (pixel !== transparency) {
                     imgData.data[i * 4 + 0] = ct[pixel][0];
