@@ -3,7 +3,7 @@
 
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<script type="text/javascript" src="./libgif.js"></script>
+		<script type="text/javascript" src="built/gif-exporter.js"></script>
 		<script type="text/javascript" src="./rubbable.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
 		<title>
@@ -17,7 +17,7 @@
 			<img id="example1" src="./example_gifs/rub_test_preview.jpg" rel:animated_src="./example_gifs/rub_test.gif" rel:auto_play="0" width="467" height="375" />
 			<br>
 			<script type="text/javascript">
-				var sup1 = new SuperGif({ gif: document.getElementById('example1') } );
+				var sup1 = GIFExporter.SuperGif({ gif: document.getElementById('example1') } );
 				sup1.load();
 			</script>
 			<a href="javascript:;" onmousedown="sup1.pause(); return false;">Pause</a> |

@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "noImplicitAny": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "sourceMap": true,
+        "declaration": true,
+        "outFile": "built/gif-exporter.js"
+    },
+    "files": [
+        "sources/gif-exporter.ts"
+    ]
+}

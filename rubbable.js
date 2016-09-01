@@ -62,7 +62,7 @@
     }
 }(this, function (SuperGif) {
     var RubbableGif = function( options ) {
-        var sup = new SuperGif( options );
+        var sup = GIFExporter.SuperGif( options );
 
         var register_canvas_handers = function () {
 
