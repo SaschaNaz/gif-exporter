@@ -518,16 +518,18 @@ namespace GIFExporter {
         });
     }
 
-    interface ImageDataFrame { data: ImageData, delay: number }
-    export interface Frame { blob: Blob, delay: number }
-    export interface ExportResult {
+    export interface Frame<T> { image: T, delay: number }
+    export interface ExportResult<T> {
         width: number;
         height: number;
         duration: number;
-        frames: Frame[];
+        frames: Frame<T>[];
     }
 
-    export async function get(input: ArrayBuffer | Blob) {
+    export async function get(input: ArrayBuffer | Blob, resultType?: "blob"): Promise<ExportResult<Blob>>;
+    export async function get(input: ArrayBuffer | Blob, resultType: "imagedata"): Promise<ExportResult<ImageData>>;
+    export async function get(input: ArrayBuffer | Blob, resultType?: "imagedata" | "blob"): Promise<ExportResult<ImageData | Blob>>;
+    export async function get(input: ArrayBuffer | Blob, resultType?: "imagedata" | "blob") {
         const buffer = input instanceof Blob ? await toArrayBuffer(input) : input;
 
         const tmpCanvas = document.createElement('canvas');
@@ -542,7 +544,7 @@ namespace GIFExporter {
         let lastDisposalMethod: number;
         let lastImg: ImageBlock;
 
-        const frames: ImageDataFrame[] = [];
+        const frames: Frame<ImageData>[] = [];
 
         const clear = () => {
             transparency = null;
@@ -574,7 +576,7 @@ namespace GIFExporter {
         const pushFrame = () => {
             if (!frame) return;
             frames.push({
-                data: frame.getImageData(0, 0, hdr.width, hdr.height),
+                image: frame.getImageData(0, 0, hdr.width, hdr.height),
                 delay
             });
         };
@@ -610,7 +612,7 @@ namespace GIFExporter {
                     // If we disposed every frame including first frame up to this point, then we have
                     // no composited frame to restore to. In this case, restore to background instead.
                     if (disposalRestoreFromIdx != null) {
-                        frame.putImageData(frames[disposalRestoreFromIdx].data, 0, 0);
+                        frame.putImageData(frames[disposalRestoreFromIdx].image, 0, 0);
                     } else {
                         frame.clearRect(lastImg.leftPos, lastImg.topPos, lastImg.width, lastImg.height);
                     }
@@ -662,7 +664,7 @@ namespace GIFExporter {
             }
         }
 
-        return new Promise<ExportResult>((resolve, reject) => {
+        return new Promise<ExportResult<ImageData | Blob>>((resolve, reject) => {
             parseGIF(new Stream(new Uint8Array(buffer)), {
                 hdr: doHdr,
                 gce: doGCE,
@@ -671,11 +673,11 @@ namespace GIFExporter {
                     //toolbar.style.display = '';
                     pushFrame();
 
-                    const blobFrames: Frame[] = [];
+                    const exportFrames: Frame<ImageData | Blob>[] = [];
                     let duration = 0;
                     for (let frame of frames) {
-                        blobFrames.push({
-                            blob: await toBlob(frame.data),
+                        exportFrames.push({
+                            image: resultType === "imagedata" ? frame.image : await toBlob(frame.image),
                             delay: frame.delay
                         })
                         duration += frame.delay;
@@ -684,7 +686,7 @@ namespace GIFExporter {
                     resolve({
                         width: hdr.width,
                         height: hdr.height,
-                        frames: blobFrames,
+                        frames: exportFrames,
                         duration
                     });
                 }
