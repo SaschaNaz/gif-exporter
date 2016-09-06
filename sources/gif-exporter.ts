@@ -202,15 +202,18 @@ namespace GIFExporter {
         sentinel: number;
         type: string;
     }
+    type Blocks = ExtBlock | ImageBlock | EofBlock;
 
     interface ExtBlock extends Block {
+        sentinel: 0x21;
+        type: "ext";
         label: number;
         extType: string;
     }
-    type ExtBlocks = GCExtBlock | CommentExtBlock | PTExtBlock | AppExtBlock | UnknownExtBlock;
+    type ExtBlocks = GCExtBlock | CommentExtBlock | PTExtBlock | AppExtBlock;
 
     interface GCExtBlock extends ExtBlock {
-        label: number; // 0xF9;
+        label: 0xF9;
         extType: "gce";
         reserved: boolean[];
         disposalMethod: number;
@@ -223,20 +226,20 @@ namespace GIFExporter {
     }
 
     interface CommentExtBlock extends ExtBlock {
-        label: number; // 0xFE;
+        label: 0xFE;
         extType: "com";
         comment: string;
     }
 
     interface PTExtBlock extends ExtBlock {
-        label: number; // 0x01;
-        extType: "gce";
+        label: 0x01;
+        extType: "pte";
         ptHeader: number[];
         ptData: string;
     }
 
     interface AppExtBlock extends ExtBlock {
-        label: number; // 0xFF;
+        label: 0xFF;
         extType: "app";
         identifier: string;
         authCode: string;
@@ -254,11 +257,14 @@ namespace GIFExporter {
 
     interface UnknownExtBlock extends ExtBlock {
         label: number;
-        extType: string;
+        extType: "unknown";
         data: string;
     }
 
     interface ImageBlock extends Block {
+        sentinel: 0x2c;
+        type: "img";
+
         leftPos: number;
         topPos: number;
         width: number;
@@ -275,6 +281,11 @@ namespace GIFExporter {
         pixels: number[];
     }
 
+    interface EofBlock extends Block {
+        sentinel: 0x3b;
+        type: "eof";
+    }
+
     interface ParserHandler {
         hdr?: (block: Header) => void;
         gce?: (block: GCExtBlock) => void;
@@ -284,7 +295,7 @@ namespace GIFExporter {
             NETSCAPE?: (block: NetscapeAppExtBlock) => void;
         }
         img?: (block: ImageBlock) => void;
-        eof?: (block: Block) => void;
+        eof?: (block: EofBlock) => void;
         unknown?: (block: Block) => void;
     }
 
@@ -333,7 +344,7 @@ namespace GIFExporter {
             handler.hdr && handler.hdr(hdr);
         };
 
-        const parseExt = (block: ExtBlock) => {
+        const parseExt = (block: ExtBlocks) => {
             const parseGCExt = (block: GCExtBlock) => {
                 const blockSize = st.readByte(); // Always 4
                 const bits = byteToBitArr(st.readByte());
@@ -397,27 +408,27 @@ namespace GIFExporter {
                 handler.unknown && handler.unknown(block);
             };
 
-            block.label = st.readByte();
+            block.label = st.readByte() as any;
             switch (block.label) {
                 case 0xF9:
                     block.extType = 'gce';
-                    parseGCExt(block as GCExtBlock);
+                    parseGCExt(block);
                     break;
                 case 0xFE:
                     block.extType = 'com';
-                    parseComExt(block as CommentExtBlock);
+                    parseComExt(block);
                     break;
                 case 0x01:
                     block.extType = 'pte';
-                    parsePTExt(block as PTExtBlock);
+                    parsePTExt(block);
                     break;
                 case 0xFF:
                     block.extType = 'app';
-                    parseAppExt(block as AppExtBlock);
+                    parseAppExt(block);
                     break;
                 default:
-                    block.extType = 'unknown';
-                    parseUnknownExt(block as UnknownExtBlock);
+                    (block as UnknownExtBlock).extType = 'unknown';
+                    parseUnknownExt(block);
                     break;
             }
         };
@@ -478,24 +489,24 @@ namespace GIFExporter {
         };
 
         const parseBlock = () => {
-            const block = {} as Block;
-            block.sentinel = st.readByte();
+            const block = {} as Blocks;
+            block.sentinel = st.readByte() as any;
 
-            switch (String.fromCharCode(block.sentinel)) { // For ease of matching
-                case '!':
+            switch (block.sentinel) { // For ease of matching
+                case 0x21:
                     block.type = 'ext';
-                    parseExt(block as ExtBlock);
+                    parseExt(block as ExtBlocks);
                     break;
-                case ',':
+                case 0x2c:
                     block.type = 'img';
-                    parseImg(block as ImageBlock);
+                    parseImg(block);
                     break;
-                case ';':
+                case 0x3b:
                     block.type = 'eof';
                     handler.eof && handler.eof(block);
                     break;
                 default:
-                    throw new Error('Unknown block: 0x' + block.sentinel.toString(16)); // TODO: Pad this with a 0.
+                    throw new Error('Unknown block: 0x' + block!.sentinel.toString(16)); // TODO: Pad this with a 0.
             }
 
             if (block.type !== 'eof') setTimeout(parseBlock, 0);
