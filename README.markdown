@@ -1,6 +1,6 @@
 # GIF Exporter
 
-Exports dependent/independent PNG frames from GIFs. Sample page [here](https://saschanaz.github.io/gif-exporter/)
+Exports dependent/independent PNG frames from GIFs. Sample page [here](https://saschanaz.github.io/gif-exporter/).
 
 # API
 
